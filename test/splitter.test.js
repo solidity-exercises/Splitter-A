@@ -50,8 +50,11 @@ contract('Splitter', (accounts) => {
         await con.donate({from: accounts[1], value: amount});
 
         const donation = await con.getMemberDonations(accounts[1]);
-        
+        const contractBalance = await con.getContractBalance();
+
+
         assert.equal(donation, amount);
+        assert.equal(contractBalance, amount);
     });
 
     it('donate Should allow members to send money which will be split among other members', async () => {
@@ -98,5 +101,32 @@ contract('Splitter', (accounts) => {
         await testUtil.assertRevert(secondWithdraw);
     });
 
-    
+    it('addMember Should add a new member to the contract', async () => {
+        const members = [accounts[1], accounts[2], accounts[3]];
+
+        await con.init(members);
+
+        await con.addMember(accounts[4], {from: accounts[0]});
+
+        const memberCount = await con.memberCount.call();
+        const isMember = await con.isMember(accounts[4]);
+
+
+        assert.equal(memberCount, members.length + 1);
+        assert.equal(isMember, true);
+    });
+
+    it('addMember Should not ruin the logic behind withdrawals and balance', async () => {
+        const members = [accounts[1], accounts[2], accounts[3]];
+
+        await con.init(members);
+
+        await con.donate({from: accounts[1], value: web3.toWei('10', 'ether')});
+
+        await con.addMember(accounts[4], {from: accounts[0]});
+
+        const account3Balance = await con.getMemberBalance(accounts[3]);
+
+        assert.equal(account3Balance.valueOf(), web3.toWei('5', 'ether'));
+    });
 });

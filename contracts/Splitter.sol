@@ -47,7 +47,7 @@ contract Splitter is Destructible {
     function getMemberBalance(address _member) public view postInit returns (uint) {
         require(members[_member].isMember);
 
-        return (getContractBalance() - 
+        return (totalBalance - 
                 members[_member].donations - 
                 members[_member].contractBalanceAtLastWithdraw -
                 members[_member].contractBalanceAtCreation) / 
@@ -78,6 +78,10 @@ contract Splitter is Destructible {
         return members[_member].donations;
     }
 
+    function isMember(address _member) public view returns (bool) {
+        return members[_member].isMember;
+    }
+
     function _acknowledgeDonation(address _sender, uint _amount) private {
         members[_sender].donations += _amount;
         totalBalance += _amount;
@@ -92,6 +96,6 @@ contract Splitter is Destructible {
     // return the correct value since memberCount is bigger by one. This function does not affect the
     // contract balance, only the logic
     function _addArtificialBalancer() private {
-        totalBalance += (totalBalance / memberCount);
+        totalBalance += (totalBalance / (memberCount-1));
     }
 }
