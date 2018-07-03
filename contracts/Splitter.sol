@@ -1,9 +1,12 @@
 pragma solidity ^0.4.23;
 
 import '../contracts/common/Destructible.sol';
+import '../contracts/common/SafeMath.sol';
 
 contract Splitter is Destructible {
     
+    using SafeMath for uint;
+
     uint public memberCount;
     uint public totalBalance;
     
@@ -47,11 +50,10 @@ contract Splitter is Destructible {
     function getMemberBalance(address _member) public view postInit returns (uint) {
         require(members[_member].isMember);
 
-        return (totalBalance - 
-                members[_member].donations - 
-                members[_member].contractBalanceAtLastWithdraw -
-                members[_member].contractBalanceAtCreation) / 
-                (memberCount - 1);
+        return (totalBalance.sub(members[_member].donations)
+                            .sub(members[_member].contractBalanceAtLastWithdraw)
+                            .sub(members[_member].contractBalanceAtCreation))
+                            .div((memberCount.sub(1)));
     }
 
     function getContractBalance() public view postInit returns (uint) {
@@ -61,7 +63,7 @@ contract Splitter is Destructible {
     function addMember(address _newMember) public postInit onlyOwner {
         _addArtificialBalancer();
 
-        memberCount += 1;
+        memberCount = memberCount.add(1);
 
         members[_newMember] = Member({isMember: true, donations: 0, contractBalanceAtLastWithdraw: 0, contractBalanceAtCreation: totalBalance});
     }
@@ -83,8 +85,8 @@ contract Splitter is Destructible {
     }
 
     function _acknowledgeDonation(address _sender, uint _amount) private {
-        members[_sender].donations += _amount;
-        totalBalance += _amount;
+        members[_sender].donations = members[_sender].donations.add(_amount);
+        totalBalance = totalBalance.add(_amount);
     }
 
     function _canWithdraw(address _members) private view returns (bool) {
@@ -96,6 +98,6 @@ contract Splitter is Destructible {
     // return the correct value since memberCount is bigger by one. This function does not affect the
     // contract balance, only the logic
     function _addArtificialBalancer() private {
-        totalBalance += (totalBalance / (memberCount-1));
+        totalBalance = totalBalance.add((totalBalance.div(memberCount.sub(1))));
     }
 }
